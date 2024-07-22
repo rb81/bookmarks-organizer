@@ -1,0 +1,7 @@
+llm_type: openai
+max_categories: 20
+batch_size: 10
+Protected Folders:
+  - Favorites
+  - Group Tab Favorites
+  - Reading List

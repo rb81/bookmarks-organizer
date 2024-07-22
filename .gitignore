@@ -1,0 +1,8 @@
+.venv
+.env
+data/*
+!data/.gitkeep
+bookmarks.html
+bookmarks_new.html
+__pycache__
+.DS_Store

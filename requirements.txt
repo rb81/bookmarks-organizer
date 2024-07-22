@@ -1,0 +1,8 @@
+PyYAML==6.0.1
+beautifulsoup4==4.12.3
+requests==2.32.3
+tqdm==4.66.4
+chardet==5.2.0
+python-dotenv==1.0.1
+openai==1.36.1
+rich==13.7.1
