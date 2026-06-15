@@ -1,8 +1,10 @@
-.venv
 .env
-data/*
-!data/.gitkeep
-bookmarks.html
-bookmarks_new.html
-__pycache__
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+.pytest_cache/
+bookmarks*.html
+progress.json
 .DS_Store

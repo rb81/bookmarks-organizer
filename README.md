@@ -2,192 +2,182 @@
 
 ![Bookmarks Organizer](/header.png)
 
-Bookmarks Organizer is a powerful Python application that helps you manage, categorize, and maintain your browser bookmarks efficiently. It uses AI-powered categorization to organize your bookmarks intelligently, validates links to keep your collection up-to-date, and provides an easy-to-use interface for managing your digital library.
-
-**Important Note:** This application has only been tested using bookmarks exported from Safari on macOS. It may not work with bookmarks exported from other browsers or operating systems. (For compatibility, see below.)
+AI-powered bookmark organizer that reads your exported bookmarks (Netscape format), categorizes them into folders using any OpenAI-compatible LLM, and exports them back — ready to import into any browser.
 
 ## Features
 
-- Import bookmarks from standard HTML bookmark files
-- Validate bookmark links and remove dead links
-- AI-powered categorization (currently using OpenAI's GPT models)
-- Customizable protected folders to maintain specific structures
-- Export organized bookmarks back to HTML format
+- **Parse & export** standard Netscape Bookmark File Format (works with Chrome, Firefox, Safari, Edge, etc.)
+- **AI categorization** using OpenAI, OpenRouter, or any OpenAI-compatible API
+- **Protected folders** — keep specific folders untouched
+- **Uncategorized mode** — only sort new/uncategorized bookmarks while preserving your existing structure
+- **Batch processing** — handles large collections efficiently
+- **Stop & resume** — automatically saves progress; resume after interruptions
+- **Retry with backoff** — gracefully handles rate limits, timeouts, and transient API errors
 
-## Quick Start Guide
+## Requirements
 
-1. **Install Python**: Ensure you have Python 3.8 or newer installed on your system.
+- Python 3.10+
+- An OpenAI-compatible API that supports **structured JSON output** (`response_format: { type: "json_object" }`). This is required for reliable categorization. Most major providers support this:
+  - ✅ OpenAI (all GPT-4o and GPT-4o-mini models)
+  - ✅ OpenRouter (most models)
+  - ✅ LM Studio / Ollama (with supported models)
+  - ❌ Some older or smaller models may not support JSON mode — if you get errors about `response_format`, your model/provider doesn't support it.
 
-2. **Clone the Repository**:
-   ```
-   git clone https://github.com/rb81/bookmarks-organizer.git
-   cd bookmarks-organizer
-   ```
-
-3. **Install Dependencies**:
-   ```
-   pip install -r requirements.txt
-   ```
-
-4. **Set Up OpenAI API Key**:
-   - Create a `.env` file in the project root directory.
-   - Add your OpenAI API key: `OPENAI_API_KEY=your_api_key_here`
-
-5. **Prepare Your Bookmarks**:
-   - Export your bookmarks from your browser as an HTML file.
-   - Name the file `bookmarks.html` and place it in the project root directory.
-
-6. **Run the Application**:
-   ```
-   python main.py
-   ```
-
-## Menu Options
-
-Once you've run the application, select an option from the menu:
+## Quick Start
 
 ```bash
-1. Sort all bookmarks
-2. Sort uncategorized bookmarks only
+# Clone and install
+git clone https://github.com/rb81/bookmarks-organizer.git
+cd bookmarks-organizer
+pip install -r requirements.txt
+
+# Configure
+cp .env.example .env
+# Edit .env with your API key
+
+# Run
+python main.py bookmarks.html
 ```
 
-_**Sort all bookmarks**_ will remove your existing folder structure and recategorize all your bookmarks.
+## Configuration
 
-_**Sort uncategorized bookmarks only**_ will look for bookmarks within a folder named `Uncategorized`. This option will retain your existing categories, but may create new ones to accommodate the new bookmarks. This is a useful option. Once your bookmarks are organized, keep a bookmarks folder called `Uncategorized` in your browser and save new bookmarks to it. Once you've collected enough, run the script with this option to categorize these new bookmarks.
+### Environment Variables (`.env`)
 
-If you want to leave bookmarks within specific folders, such as `Favorites` or `Mobile Bookmarks`, simply add these folder names to the `Protected Folders` setting in the `config.yaml` file (as explained further down in this document).
+```bash
+# Required
+API_KEY=sk-your-key-here
 
-Once completed, a new file called `bookmarks_new.html` will be created in the root folder. Clear out the bookmarks from your browser, and import this new file. You will need to move folders out of the import folder once imported.
+# Optional (defaults shown)
+BASE_URL=https://api.openai.com/v1
+MODEL=gpt-4o-mini
+```
 
-If anything goes wrong or if you're unhappy with the resulting categorization, simply delete the bookmarks in your browser, and import the original `bookmarks.html`. (For this reason it's important to retain the original file.)
+**Using OpenRouter:**
+```bash
+API_KEY=sk-or-v1-your-key
+BASE_URL=https://openrouter.ai/api/v1
+MODEL=anthropic/claude-sonnet-4
+```
 
-## Validating and Updating Bookmark Metadata
+**Using a local LLM (e.g., LM Studio, Ollama):**
+```bash
+API_KEY=not-needed
+BASE_URL=http://localhost:1234/v1
+MODEL=local-model
+```
 
-In all cases, the application will make a request to every URL. Any that are found to be erroneous or unresponsive are removed from your bookmarks and stored in the `data` folder in a file named `retired.json`. By default, bookmarks are only validated and updated if it has been more than 30 days since the last run. To force an update, simply empty out the `data` folder and re-run the script.
+> **Note:** Your model must support `response_format: { type: "json_object" }`. In Ollama, this works with most recent models. In LM Studio, ensure you're using a model that supports structured output.
 
-## Data Files
-
-The application stores the output of each step in JSON files within the `data` folder. You do not need these files; however, if you retain them, re-running the application will use them to determine whether to validate and update bookmark metadata again.
-
-## Logging
-
-Detailed error logging can be found in the `data` folder. The application creates a log file named `bookmarks_organizer.log` with details on every step of the process.
-
-## Compatibility
- 
-This application expects your bookmarks to be in the [**Netscape Bookmark File Format**](https://learn.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/aa753582(v=vs.85)), which is the format currently used by Safari in macOS. File format examples provided further down this document.
-
-## Detailed Configuration and Customization
-
-### Configuration File
-
-The `config.yaml` file in the project root directory contains various settings:
+### Config File (`config.yaml`)
 
 ```yaml
-days_threshold: 30
-Protected Folders:
-  - "Important"
-  - "Work"
 max_categories: 20
-llm_type: openai
 batch_size: 10
+protected_folders:
+  - Favorites
+  - Reading List
 ```
 
-- `days_threshold`: Number of days before re-validating a bookmark
-- `Protected Folders`: List of folders that won't be reorganized
-- `max_categories`: Maximum number of categories to create
-- `llm_type`: Type of language model to use (currently only 'openai' is supported)
-- `batch_size`: Number of bookmarks to process in each batch
+## Usage
 
-### Customizing the Categorization Process
+```bash
+# Organize all bookmarks
+python main.py bookmarks.html
 
-To modify the categorization logic, edit the `openai_llm.py` file. You can adjust the prompt or change the model used for categorization.
+# Specify output file
+python main.py bookmarks.html -o organized.html
 
-### Adding New LLM Providers
+# Only organize uncategorized bookmarks (preserves existing folders)
+python main.py bookmarks.html --uncategorized-only
 
-To add support for new language model providers:
+# Override model/provider from CLI
+python main.py bookmarks.html --model gpt-4o --base-url https://openrouter.ai/api/v1
 
-1. Create a new file (e.g., `new_provider_llm.py`) in the `app` directory.
-2. Implement the `LLMInterface` defined in `llm_interface.py`.
-3. Update `llm_factory.py` to include the new provider.
+# Start fresh (ignore saved progress)
+python main.py bookmarks.html --no-resume
 
-## Netscape Bookmark File Format Example
+# See all options
+python main.py --help
+```
 
-The start of the file should look something like this:
+### Stop & Resume
+
+If you interrupt the process (Ctrl+C) or it crashes mid-run, progress is automatically saved to `progress.json`. Simply run the same command again and it will resume where it left off. Use `--no-resume` to discard saved progress and start fresh.
+
+### Error Handling
+
+The organizer handles transient API failures gracefully:
+
+- **Rate limits** — waits and retries (up to 3 attempts with increasing delays)
+- **Timeouts** — retries with backoff
+- **Connection errors** — retries with backoff
+- **Server errors (5xx)** — retries with backoff
+- **Client errors (4xx)** — fails immediately (e.g., invalid API key, unsupported model)
+- **Invalid responses** — marks affected bookmarks as "Uncategorized" rather than crashing
+
+If all retries are exhausted for a batch, those bookmarks are placed in an "Uncategorized" folder and processing continues.
+
+### Workflow
+
+1. **Export** bookmarks from your browser as HTML
+2. **Run** the organizer
+3. **Import** the output file back into your browser
+4. Keep a folder called "Uncategorized" for new bookmarks — periodically run with `--uncategorized-only` to sort them
+
+## Netscape Bookmark File Format
+
+This is the standard format used by all major browsers for bookmark import/export:
 
 ```html
 <!DOCTYPE NETSCAPE-Bookmark-file-1>
-    <!--This is an automatically generated file.
-    It will be read and overwritten.
-    Do Not Edit! -->
-    <Title>Bookmarks</Title>
-    <H1>Bookmarks</H1>
-```
-
-The `<DL>` tag wraps the list of items:
-
-```html
-<DL>
-    {item}
-    {item}
-    {item}
-    .
-    .
-    .
-    </DL>
-```
-
-Subfolder should look like this:
-
-```html
-<DT><H3 FOLDED ADD_DATE="{date}">{title}</H3>
+<!--This is an automatically generated file.
+It will be read and overwritten.
+Do Not Edit! -->
+<Title>Bookmarks</Title>
+<H1>Bookmarks</H1>
+<DL><p>
+    <DT><H3 FOLDED ADD_DATE="1234567890">Folder Name</H3>
     <DL><p>
-        {item}
-        {item}
-        {item}
-        .
-        .
-        .
+        <DT><A HREF="https://example.com" ADD_DATE="1234567890">Example</A>
     </DL><p>
+</DL><p>
 ```
 
-Bookmarks should look like this:
+## Testing
 
-```html
-<DT><A HREF="{url}" ADD_DATE="{date}" LAST_VISIT="{date}" LAST_MODIFIED="{date}">{title}</A>
+```bash
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest -v
+
+# Run a specific test file
+pytest tests/test_parser.py
 ```
 
 ## Project Structure
 
 ```
 bookmarks-organizer/
-│
+├── main.py              # CLI entry point
 ├── src/
-│   ├── __init__.py
-│   ├── categorize_bookmarks.py
-│   ├── export_bookmarks.py
-│   ├── import_bookmarks.py
-│   ├── llm_factory.py
-│   ├── llm_interface.py
-│   ├── log_config.py
-│   ├── openai_llm.py
-│   ├── reorganize_bookmarks.py
-│   └── validate_bookmarks.py
-│
-├── data/
-│   └── (Generated JSON files and log)
-│
-├── main.py
+│   ├── models.py        # Bookmark & Folder dataclasses
+│   ├── parser.py        # Netscape HTML parser
+│   ├── writer.py        # Netscape HTML writer
+│   ├── organizer.py     # LLM-powered categorization (with retries)
+│   └── progress.py      # Stop/resume persistence
+├── tests/
+│   ├── test_parser.py   # Parser & extraction tests
+│   ├── test_writer.py   # Writer & round-trip tests
+│   ├── test_organizer.py # Organizer & categorization tests
+│   └── test_progress.py # Progress persistence tests
+├── config.yaml          # User settings
+├── .env.example         # Environment template
 ├── requirements.txt
-├── .env
-├── config.yaml
 └── README.md
 ```
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Transparency Disclaimer
-
-[ai.collaboratedwith.me](ai.collaboratedwith.me) in creating this project.
+MIT License — see [LICENSE](LICENSE) for details.
